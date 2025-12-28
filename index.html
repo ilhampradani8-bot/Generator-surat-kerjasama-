@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Surat Resmi Solvimport</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap'); /* Font Serif untuk Surat */
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #e2e8f0;
+            color: #1e293b;
+            display: flex;
+            flex-direction: row;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent body scroll, use inner scroll */
+        }
+
+        /* SIDEBAR CONTROLS */
+        .sidebar {
+            width: 350px;
+            background: white;
+            padding: 25px;
+            border-right: 1px solid #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            height: 100vh;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .sidebar h2 { margin: 0 0 10px 0; font-size: 1.1rem; color: #0066CC; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
+        
+        input, textarea {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #0066CC; ring: 2px solid #bfdbfe; }
+        textarea { resize: vertical; min-height: 80px; }
+
+        .btn-download {
+            background: linear-gradient(135deg, #FF6600 0%, #ea580c 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: auto;
+            box-shadow: 0 4px 6px rgba(255,102,0,0.2);
+            transition: 0.2s;
+        }
+        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(255,102,0,0.3); }
+
+        /* PREVIEW AREA */
+        .preview-area {
+            flex: 1;
+            background: #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            overflow: auto;
+        }
+
+        canvas {
+            background: white;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            width: auto;
+        }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; overflow: auto; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #cbd5e1; }
+            .preview-area { padding: 20px; }
+            canvas { max-width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INPUTS -->
+    <div class="sidebar">
+        <h1 style="font-size:1.5rem; margin-bottom:5px;">Generator Surat</h1>
+        <p style="font-size:0.8rem; color:#64748b; margin-bottom:20px;">Edit data di bawah, preview otomatis berubah.</p>
+
+        <h2>1. Header Surat</h2>
+        <div class="form-group">
+            <label>Nomor Surat</label>
+            <input type="text" id="nomor" value="001/EDU-SLV/XII/2024" oninput="drawLetter()">
+        </div>
+        <div class="form-group">
+            <label>Lampiran</label>
+            <input type="text" id="lampiran" value="1 Berkas Proposal" oninput="drawLetter()">
+        </div>
+        <div class="form-group">
+            <label>Perihal</label>
+            <input type="text" id="perihal" value="Penawaran Kerjasama Program Kewirausahaan" oninput="drawLetter()">
+        </div>
+
+        <h2>2. Penerima</h2>
+        <div class="form-group">
+            <label>Tanggal Surat</label>
+            <input type="text" id="tanggal" value="Jakarta, 20 Desember 2024" oninput="drawLetter()">
+        </div>
+        <div class="form-group">
+            <label>Kepada Yth.</label>
+            <input type="text" id="kepada" value="Kepala Sekolah SMK Telkom" oninput="drawLetter()">
+        </div>
+        <div class="form-group">
+            <label>Di Tempat / Kota</label>
+            <input type="text" id="tempat" value="Di Tempat" oninput="drawLetter()">
+        </div>
+
+        <h2>3. Isi Surat (Fleksibel)</h2>
+        <div class="form-group">
+            <label>Paragraf Pembuka</label>
+            <textarea id="p1" oninput="drawLetter()">Dengan hormat, sehubungan dengan program pengembangan kompetensi kewirausahaan (P5) bagi siswa, kami dari Solvimport mengajukan penawaran kerjasama edukasi bisnis digital.</textarea>
+        </div>
+        <div class="form-group">
+            <label>Isi Utama (Point-point dipisah Enter)</label>
+            <textarea id="points" style="height:120px;" oninput="drawLetter()">1. Workshop Gratis: "Jago Impor Tanpa Modal" oleh Praktisi.
+2. Praktik Langsung: Riset produk & strategi pemasaran viral.
+3. Potensi Penghasilan: Program Affiliate bagi siswa.
+4. Sertifikat Kompetensi Digital.</textarea>
+        </div>
+        <div class="form-group">
+            <label>Paragraf Penutup</label>
+            <textarea id="p3" oninput="drawLetter()">Kami tidak memungut biaya apapun (GRATIS). Besar harapan kami untuk dapat berdiskusi lebih lanjut mengenai jadwal pelaksanaan.</textarea>
+        </div>
+
+        <h2>4. Tanda Tangan</h2>
+        <div class="form-group">
+            <label>Nama Penandatangan</label>
+            <input type="text" id="signer" value="Nama Lengkap Anda" oninput="drawLetter()">
+        </div>
+        <div class="form-group">
+            <label>Jabatan</label>
+            <input type="text" id="jabatan" value="CEO Solvimport" oninput="drawLetter()">
+        </div>
+
+        <button class="btn-download" onclick="downloadImage()">⬇ Download Surat (JPG HD)</button>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-area">
+        <!-- Canvas A4 Size: 2480 x 3508 pixels (300 DPI for Print) or scaled down -->
+        <!-- Using 1240 x 1754 (150 DPI) for web performance & good print quality -->
+        <canvas id="letterCanvas" width="1240" height="1754"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('letterCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const theme = {
+        blue: '#0066CC',
+        dark: '#1e293b',
+        orange: '#FF6600',
+        text: '#000000'
+    };
+
+    function drawLetter() {
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        // Clear
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, w, h);
+
+        // --- KOP SURAT (Dinamis & Modern) ---
+        // Top Bar
+        ctx.fillStyle = theme.blue;
+        ctx.fillRect(0, 0, w, 25);
+
+        // Logo Text
+        ctx.textAlign = "left";
+        ctx.fillStyle = theme.blue;
+        ctx.font = "900 65px 'Plus Jakarta Sans'";
+        ctx.fillText("SOLVIMPORT", 100, 130);
+        
+        ctx.fillStyle = theme.orange;
+        ctx.font = "bold 24px 'Plus Jakarta Sans'";
+        ctx.fillText("Logistics • Technology • Education", 100, 160);
+
+        // Address info (Right aligned)
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#475569";
+        ctx.font = "500 22px 'Plus Jakarta Sans'";
+        ctx.fillText("CEO Office: Jakarta, Indonesia", w - 100, 110);
+        ctx.fillText("WhatsApp: 0877-6734-0075", w - 100, 140);
+        ctx.fillText("Website: import.solvtech.id", w - 100, 170);
+
+        // Separator Line
+        ctx.strokeStyle = theme.dark;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(100, 200); ctx.lineTo(w-100, 200); ctx.stroke();
+        ctx.strokeStyle = theme.orange;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(100, 208); ctx.lineTo(w-100, 208); ctx.stroke();
+
+        // --- METADATA SURAT ---
+        let cursorY = 300;
+        const margin = 120; // Left margin
+        const contentW = w - (margin * 2);
+        
+        ctx.textAlign = "left";
+        ctx.fillStyle = "black";
+        ctx.font = "400 30px 'Merriweather'"; // Font surat resmi
+
+        // Date (Right aligned generally, but let's keep standard block style)
+        const tanggal = document.getElementById('tanggal').value;
+        ctx.textAlign = "right";
+        ctx.fillText(tanggal, w - 100, cursorY);
+        ctx.textAlign = "left"; // Reset
+
+        // Nomor Lampiran Perihal
+        const nomor = document.getElementById('nomor').value;
+        const lampiran = document.getElementById('lampiran').value;
+        const perihal = document.getElementById('perihal').value;
+
+        ctx.font = "400 30px 'Merriweather'";
+        ctx.fillText("Nomor", margin, cursorY); ctx.fillText(`: ${nomor}`, margin + 150, cursorY); cursorY += 45;
+        ctx.fillText("Lampiran", margin, cursorY); ctx.fillText(`: ${lampiran}`, margin + 150, cursorY); cursorY += 45;
+        ctx.fillText("Perihal", margin, cursorY); 
+        
+        // Bold Perihal
+        ctx.font = "bold 30px 'Merriweather'";
+        ctx.fillText(`: ${perihal}`, margin + 150, cursorY); cursorY += 100;
+
+        // Kepada Yth
+        const kepada = document.getElementById('kepada').value;
+        const tempat = document.getElementById('tempat').value;
+        
+        ctx.font = "400 30px 'Merriweather'";
+        ctx.fillText("Kepada Yth,", margin, cursorY); cursorY += 45;
+        ctx.font = "bold 30px 'Merriweather'";
+        ctx.fillText(kepada, margin, cursorY); cursorY += 45;
+        ctx.font = "400 30px 'Merriweather'";
+        ctx.fillText(tempat, margin, cursorY); cursorY += 100;
+
+        // --- BODY TEXT ---
+        // Helper wrap text function included inside
+        
+        // Paragraf 1
+        const p1 = document.getElementById('p1').value;
+        cursorY = wrapTextJustified(ctx, p1, margin, cursorY, contentW, 45);
+        cursorY += 40; // Spacing antar paragraf
+
+        // Poin-poin (List)
+        const pointsRaw = document.getElementById('points').value;
+        const points = pointsRaw.split('\n');
+        
+        if (points.length > 0 && points[0] !== "") {
+            ctx.font = "400 30px 'Merriweather'"; // Reset to regular
+            points.forEach(point => {
+                // Check if line starts with number/bullet to adjust indent
+                ctx.fillText(point, margin + 40, cursorY);
+                cursorY += 50; // Line height for list
+            });
+            cursorY += 30;
+        }
+
+        // Paragraf 3 (Penutup)
+        const p3 = document.getElementById('p3').value;
+        cursorY = wrapTextJustified(ctx, p3, margin, cursorY, contentW, 45);
+        cursorY += 100;
+
+        // --- SIGNATURE ---
+        ctx.fillText("Hormat Kami,", margin, cursorY); cursorY += 45;
+        ctx.font = "bold 30px 'Merriweather'";
+        ctx.fillText("Manajemen Solvimport", margin, cursorY); cursorY += 200; // Space for sign
+
+        const signer = document.getElementById('signer').value;
+        const jabatan = document.getElementById('jabatan').value;
+
+        ctx.font = "bold 30px 'Merriweather'";
+        ctx.fillText(`( ${signer} )`, margin, cursorY); cursorY += 45;
+        ctx.font = "400 30px 'Merriweather'";
+        ctx.fillText(jabatan, margin, cursorY);
+
+        // Footer Bar
+        ctx.fillStyle = theme.blue;
+        ctx.fillRect(0, h-30, w, 30);
+    }
+
+    // Custom Text Wrapper
+    function wrapTextJustified(ctx, text, x, y, maxWidth, lineHeight) {
+        let words = text.split(' ');
+        let line = '';
+        ctx.font = "400 30px 'Merriweather'"; // Ensure font is set
+
+        for(let n = 0; n < words.length; n++) {
+            let testLine = line + words[n] + ' ';
+            let metrics = ctx.measureText(testLine);
+            let testWidth = metrics.width;
+            
+            if (testWidth > maxWidth && n > 0) {
+                ctx.fillText(line, x, y);
+                line = words[n] + ' ';
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, y);
+        return y + lineHeight;
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        const fileName = document.getElementById('kepada').value.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `Surat_Resmi_${fileName}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+    }
+
+    // Init
+    window.onload = () => {
+        document.fonts.ready.then(() => {
+            drawLetter();
+        });
+    };
+</script>
+</body>
+</html>
